@@ -1,0 +1,9 @@
+FROM python:3
+RUN pip install celery
+RUN pip uninstall librabbitmq
+RUN pip uninstall motor
+RUN pip uninstall asyncio
+RUN pip install pymongo
+WORKDIR /app/celery_worker
+ENV DOCKER=true
+

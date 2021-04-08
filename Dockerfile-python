@@ -1,0 +1,16 @@
+FROM python:3
+RUN pip install fastapi uvicorn
+RUN pip install pymongo
+RUN pip install aiohttp
+RUN pip install python-jose
+RUN pip install python-multipart
+RUN pip install celery
+RUN pip install motor
+RUN pip install docxtpl
+RUN pip install xlrd
+RUN pip install xlwt
+RUN pip uninstall librabbitmq
+RUN pip install geopy
+ENV DOCKER=true
+COPY ./app /app
+WORKDIR /app

@@ -1,0 +1,87 @@
+version: '3.1'
+
+services:
+
+  fastapi:
+   user: root
+   build: 
+     context: .
+     dockerfile: Dockerfile-python
+   container_name: realty-fastapi
+   restart: always
+   ports:
+     - 8000:80
+   command: /bin/sh -c "uvicorn server:app --reload --host 0.0.0.0 --port 80 --root-path /server"
+   volumes:
+     - ./app/:/app
+     - ./client/static/img:/app/images
+   depends_on:
+     - mongo 
+
+  nuxtjs:
+   user: root
+   restart: always
+   build: 
+     context: .
+     dockerfile: Dockerfile-nuxt
+   container_name: realty-nuxtjs
+   command: /bin/sh -c "npm run start"
+   volumes:
+     - ./client:/client
+   working_dir: /client
+   ports:
+    - "3000:3000"
+   environment:
+    HOST: 0.0.0.0 
+
+
+  mongo:
+   image: mongo
+   container_name: realty-mongo
+   restart: always
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: root
+     MONGO_INITDB_ROOT_PASSWORD: example
+   ports:
+     - 27017:27017
+   volumes:
+     - "./.docker/db:/data/db"
+
+  rabbit:
+     container_name: realty_rabbit
+     hostname: rabbit
+     image: rabbitmq:3.7-management
+     environment:
+        - RABBITMQ_DEFAULT_USER=user
+        - RABBITMQ_DEFAULT_PASS=user
+     ports:
+        - "5672:5672"
+        - "15672:15672"   
+
+  worker:
+     build: 
+        context: .
+        dockerfile: Dockerfile-celery
+     container_name: worker_celery
+     depends_on:
+        - rabbit
+     working_dir: /app/celery_worker
+     volumes:
+        - ./app/celery_worker:/app/celery_worker
+        - ./client/static/img:/app/images
+     command: /bin/sh -c "celery -A task worker --loglevel=info"
+
+  beat:
+     build: 
+        context: .
+        dockerfile: Dockerfile-celery
+     container_name: beat_celery
+     depends_on:
+        - rabbit
+     working_dir: /app/celery_worker
+     volumes:
+        - ./app/celery_worker:/app/celery_worker
+        - ./client/static/img:/app/images
+     command: /bin/sh -c "celery -A task beat --loglevel=info"
+
+
