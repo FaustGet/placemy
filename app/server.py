@@ -2,9 +2,7 @@ from fastapi import FastAPI, Response, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from router import authentication,ad,geocoders, files
 
-
 app = FastAPI()
-
 app.include_router(authentication.router)
 app.include_router(ad.router)
 app.include_router(geocoders.router)

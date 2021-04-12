@@ -51,3 +51,28 @@ async def push_offerdb(estate,offer):
             await db.rent_day_commercy.insert_one(offer)
             return
     return
+
+
+async def get_offer(id: str):
+    id_list = id.split("-")
+    try:
+        estate = id_list[0]
+        deal = id_list[1]
+        if estate == "living":
+            if deal == "sell":
+                return db.sell_living.find_one({"_id": id})
+            if deal == "rent_long":
+                return await db.rent_long_living.find_one({"_id": id})
+            if deal == "rent_day":
+                return await db.rent_day_living.find_one({"_id": id})
+
+        if estate == "commercy":
+            if deal == "sell":
+                return await db.sell_commercy.find_one({"_id": id})
+            if deal == "rent_long":
+                return await db.rent_long_commercy.find_one({"_id": id})
+            if deal == "rent_day":
+                return await db.rent_day_commercy.find_one({"_id": id})
+        return ""
+    except:
+        return ""
