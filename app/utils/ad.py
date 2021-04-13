@@ -1,3 +1,5 @@
+import datetime
+
 from config.mongodb import db
 from utils.object_commercy import *
 from utils.object_living import *
@@ -58,21 +60,25 @@ async def get_offer(id: str):
     try:
         estate = id_list[0]
         deal = id_list[1]
+        offer = ""
         if estate == "living":
             if deal == "sell":
-                return db.sell_living.find_one({"_id": id})
+                offer = await db.sell_living.find_one({"_id": id})
             if deal == "rent_long":
-                return await db.rent_long_living.find_one({"_id": id})
+                offer = await db.rent_long_living.find_one({"_id": id})
             if deal == "rent_day":
-                return await db.rent_day_living.find_one({"_id": id})
+                offer = await db.rent_day_living.find_one({"_id": id})
 
         if estate == "commercy":
             if deal == "sell":
-                return await db.sell_commercy.find_one({"_id": id})
+                offer = await db.sell_commercy.find_one({"_id": id})
             if deal == "rent_long":
-                return await db.rent_long_commercy.find_one({"_id": id})
+                offer = await db.rent_long_commercy.find_one({"_id": id})
             if deal == "rent_day":
-                return await db.rent_day_commercy.find_one({"_id": id})
-        return ""
+                offer = await db.rent_day_commercy.find_one({"_id": id})
+        print(offer)
+        if offer != "":
+            offer['date'] = datetime.datetime.fromtimestamp(offer['date']).strftime("%d.%m.%Y %H:%M")
+        return offer
     except:
         return ""
