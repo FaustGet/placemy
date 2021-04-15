@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 from config import server
 from config.mongodb import db
 from models.Ad import Place_an_ad
+from models.filters import *
 from utils.ad import *
 from utils.authentication import  check_auth_user
 from utils.filter import *
@@ -75,11 +76,16 @@ async def get_offer_on_id(id:str):
 async def get_offer_on_object(deal: Optional[str] = "",
                               kind: Optional[str] = "",
                               type: Optional[str] = "",
-                              object: Optional[str]="",
-                              repair: Optional[str]="",
-                              pagina: Optional[int]=1):
+                              object: Optional[str] = "",
+                              repair: Optional[str] = "",
+                              pagina: Optional[int] = 0):
     table = await select_table(deal, kind)
     if table == -1:
         return []
     list_offer = await select_offers(kind,type,object,repair,pagina,table)
     return list_offer
+
+@router.post("/get_filter_offers")
+async def get_filter_offers(filter_offers:Filter_offers):
+    print(filter_offers)
+    return

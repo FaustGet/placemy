@@ -41,16 +41,15 @@ async def select_kind(kind:str,type:str,repair:str):
 
 
 async def select_offers(kind:str,type:str,object:str,repair:str,pagina:int,table):
+    list_offers = []
     if kind == "commercy":
-        list_offers = []
         async for post in table.find({"offer_object.office_type":object}).sort('date',-1):
             post['date'] = datetime.datetime.fromtimestamp(post['date']).strftime("%d.%m.%Y %H:%M")
             list_offers.append(post)
         return list_offers
     request_json = await select_kind(kind,type,repair)
     request_json = await select_count_rooms(request_json, object)
-    list_offers = []
-    async for post in table.find(request_json).sort('date', -1):
+    async for post in table.find(request_json).sort('date', -1).skip(pagina * 25):
         post['date'] = datetime.datetime.fromtimestamp(post['date']).strftime("%d.%m.%Y %H:%M")
         list_offers.append(post)
     return list_offers
