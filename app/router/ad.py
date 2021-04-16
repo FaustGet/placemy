@@ -87,5 +87,8 @@ async def get_offer_on_object(deal: Optional[str] = "",
 
 @router.post("/get_filter_offers")
 async def get_filter_offers(filter_offers:Filter_offers):
-    print(filter_offers)
+    table = await select_table(filter_offers.deals.get('value'),filter_offers.objects.get('value'))
+    if table == -1:
+        return []
+    list_offer = await select_filter_offers(filter_offers,table,0)
     return

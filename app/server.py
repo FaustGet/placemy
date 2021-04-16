@@ -13,6 +13,9 @@ app.include_router(files.router)
 
 @app.middleware("http")
 async def add_process(request: Request, call_next):
+    # print(request.url.hostname)
+    if (request.url.hostname != "127.0.0.1"):
+         return Response(status_code=404)
     response = await call_next(request)
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
