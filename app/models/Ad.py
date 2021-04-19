@@ -7,8 +7,8 @@ class Place_an_ad(BaseModel):
     offerMap: dict
     offerObject: dict
     offerPrice: dict
-    offerPhothos: list
     offerDescription: str
+    offerPhothos: list
 
 class Test_celery(BaseModel):
     name:str

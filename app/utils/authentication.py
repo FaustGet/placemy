@@ -9,7 +9,7 @@ from starlette.responses import Response
 from config.authentication import *
 from config.mongodb import db
 
-
+ 
 async def create_access_token(data: dict, expires_delta: Optional[int] = 1000000):
     to_encode = data.copy()
     expire = datetime.now() + timedelta(minutes=60)
@@ -57,3 +57,19 @@ async def check_auth_user(request: Request):
         return user
     except:
         raise HTTPException(status_code=401)
+
+async def check_auth_ret_user(request: Request):
+    try:
+        if (not request.cookies) or ('session_token' not in request.cookies):
+            return -1
+        token = request.cookies.get('session_token')
+        payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
+        email = payload.get("email")
+        if email is None:
+            return -1
+        user = await db.users.find_one({'email': email})
+        if user:
+            return True
+        return -1
+    except:
+        return -1 

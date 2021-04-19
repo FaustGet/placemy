@@ -16,4 +16,15 @@ class Filter_offers(BaseModel):
     typeBuilding: Optional[dict]={}
     typeCommercy: Optional[dict]={}
     typeGround: Optional[dict]={}
+    cities: Optional[dict]={}
+    page: Optional[int] = 1
 
+class List_filter_offers(BaseModel):
+    id:str
+    title:str
+    address:str
+    price:int
+    price_m2: float
+    description:str
+    images:list
+    is_agent:bool

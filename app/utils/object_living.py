@@ -24,7 +24,7 @@ async def get_room(offerObject):
 
 async def get_house(offerObject):
     return {
-        "object": "room",
+        "object": "house",
         "area_land": offerObject.get("inputs").get("area_land").get("value"),
         "area_house": offerObject.get("inputs").get("area_house").get("value"),
         "count_rooms": offerObject.get("inputs").get("count_rooms").get("value"),

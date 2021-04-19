@@ -1,12 +1,13 @@
 import uuid
 import random
-from typing import Optional
-
+from starlette.requests import Request
 from fastapi import APIRouter, HTTPException,Response
 from config import server
+from config.authentication import *
 from config.mongodb import db
+from jose import JWTError, jwt
 from models.authentication import *
-from utils.authentication import create_access_token, check_activ_user_form_emailhash
+from utils.authentication import *
 from utils.email import send_mes
 
 router = APIRouter(prefix=server.Server_config.prefix,
@@ -50,7 +51,9 @@ async def Registration_User(signup:Signup):
                                "tel":signup.tel,
                                "code_activation":code_activation,
                                "is_activ":False})
-
+    await db.statistics.insert_one({"_id":str(uuid.uuid4()),
+                                    "tel":signup.tel,
+                                    "count":0})
     await send_mes(signup.email,code_activation)
     return signup
 
@@ -60,5 +63,10 @@ async def activ_user(new_token:Activ_user):
         return True
     else:
         return False
+
+@router.get("/auth_is_login")
+async def is_login(request: Request):
+    return await check_auth_ret_user(request)
+    
 
 
