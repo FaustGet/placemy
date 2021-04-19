@@ -13,7 +13,8 @@ router = APIRouter(prefix=server.Server_config.prefix,
 
 @router.post("/offer_uploadfile/")
 async def create_upload_file(file: UploadFile = File(...)):
-    try:
+    #try:
+      print(file.filename)
       oldName = file.filename
       date = datetime.datetime.now() + datetime.timedelta(seconds=3600)
       file.filename = str(int(date.timestamp())) + str(random.randint(100, 999)) + "-1.jpg"
@@ -22,7 +23,7 @@ async def create_upload_file(file: UploadFile = File(...)):
       await db.temp_img.delete_one({"newName":file.filename})
       await db.temp_img.insert_one({"name":oldName,"newName":file.filename,
                                     "date":int(date.timestamp())})
-    finally:
-      file.file.close()
-    return 
+    #finally:
+     # file.file.close()
+    #return 
 

@@ -7,7 +7,7 @@ from geopy.geocoders import Nominatim
 router = APIRouter(prefix=server.Server_config.prefix,
                    responses = server.Server_config.responses,
                    tags=['geocoder'])
-
+ 
 class Geocod(object):
     address = "Таджикистан"
 
