@@ -13,3 +13,6 @@ class Place_an_ad(BaseModel):
 class Test_celery(BaseModel):
     name:str
     q:int
+
+class aciv_offer(BaseModel):
+    id:str

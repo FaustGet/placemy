@@ -33,27 +33,8 @@ async def get_offer_price(type,offerPrice):
 async def push_offerdb(estate,offer):
     id = str(uuid.uuid4())
     offer.update({"_id": estate + "-" + offer.get('offer_price').get('deal') + "-" + id})
-    if estate == "living":
-        if offer.get('offer_price').get('deal') == "sell":
-            await db.sell_living.insert_one(offer)
-            return
-        if offer.get('offer_price').get('deal') == "rent_long":
-            await db.rent_long_living.insert_one(offer)
-            return
-        if offer.get('offer_price').get('deal') == "rent_day":
-            await db.rent_day_living.insert_one(offer)
-            return
-        return
-    if estate == "commercy":
-        if offer.get('offer_price').get('deal') == "sell":
-            await db.sell_commercy.insert_one(offer)
-            return
-        if offer.get('offer_price').get('deal') == "rent_long":
-            await db.rent_long_commercy.insert_one(offer)
-            return
-        if offer.get('offer_price').get('deal') == "rent_day":
-            await db.rent_day_commercy.insert_one(offer)
-            return
+    table = await select_table(offer.get('offer_price').get('deal'),estate)
+    await table.insert_one(offer)
     return
 
 
@@ -110,8 +91,9 @@ async def get_offer_on_id(id:str):
         deal = id_list[1]
         table = await select_table(deal, estate)
         offer = await table.find_one({"_id":id})
-        
         if offer:
+            if offer['activ'] == False:
+                return ""
             if offer['offer_object']['object'] == 'apartment' or offer['offer_object']['object'] == 'room' :
                 offer['offer_object']['building_type'] = building_type.value.get(offer['offer_object']['building_type'])
                 offer['offer_object']['building_renovation'] = building_renovation.value.get(offer['offer_object']['building_renovation'])
@@ -135,14 +117,17 @@ async def get_offer_on_id(id:str):
             if offer['offer_price'].get('deposit') or offer['offer_price'].get('percentageTransaction'):
                 agent = True
             offer['is_agent'] = agent
-            
+            offer['offer_object']['object'] = type_objects.value.get(offer['offer_object']['object'])
             offer['date'] = datetime.datetime.fromtimestamp(offer['date']).strftime("%d.%m.%Y %H:%M")
             offer['offer_object']['city'] = city_type.value.get(offer['offer_object']['city']) 
             if deal == "sell":
                 offer['offer_price']['type_sell'] = type_sell_data.value.get(offer['offer_price']['type_sell'])
-            if deal == "rent_long" or deal == 'rent_day':
+            if deal == "rent_long":
                 offer['offer_price']['for_who'] = for_who_data.value.get(offer['offer_price']['for_who'])
                 offer['offer_price']['prepayment'] = prepayment_data.value.get(offer['offer_price']['prepayment'])
+            if deal == 'rent_day':
+                offer['offer_price']['for_who'] = for_who_data.value.get(offer['offer_price']['for_who'])
+
             list_images = []
             for post in offer['offerPhothos']:
                 list_images.append({'imgName':"https://mirllex.site/img/" + post.get('imgName')})

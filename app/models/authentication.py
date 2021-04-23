@@ -1,4 +1,4 @@
-
+from typing import Optional
 from pydantic.main import BaseModel
 
 
@@ -9,10 +9,10 @@ class Signin(BaseModel):
 class Signup(BaseModel):
     name: str
     surname: str
-    patronymic: str
     tel: str
     email: str
     password: str
 
 class Activ_user(BaseModel):
     token:str
+

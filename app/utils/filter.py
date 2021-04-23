@@ -7,17 +7,17 @@ from utils.price__type import *
 from models.filters import Filter_offers,List_filter_offers
 
 async def select_table(deal:str, kind:str):
-    print(deal,kind)
+
     if kind == "commercy" or kind == 'building':
         if deal == "buy" or deal == "sell":
             return db.sell_commercy
-        if deal == "daily":
+        if deal == "daily" or deal == "rent_day":
             return db.rent_day_commercy
-        if deal == "rent":
+        if deal == "rent" or deal == "rent_long":
             return db.rent_long_commercy 
     if deal == "buy" or deal == "sell":
         return db.sell_living
-    if deal == "daily":
+    if deal == "daily" or deal == "rent_day":
         return db.rent_day_living
     if deal == "rent" or deal == "rent_long":
         return db.rent_long_living 
@@ -180,7 +180,8 @@ async def select_filter_offers(filter_offers:Filter_offers,table,page:int):
     list_offers = []
     
     async for post in table.find(request_json).sort('date', -1).skip((page-1) * 20).limit(20):
-        list_offers.append(await get_offer(post))
+        if post["activ"] == True:
+            list_offers.append(await get_offer(post))
     pages = await select_pages(table,request_json) 
     response = {"list_offers":list_offers,"pages": pages}
     return response

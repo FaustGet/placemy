@@ -7,6 +7,8 @@ from config.authentication import *
 from config.mongodb import db
 from jose import JWTError, jwt
 from models.authentication import *
+from models.user import *
+
 from utils.authentication import *
 from utils.email import send_mes
 
@@ -33,8 +35,7 @@ async def login(signin:Signin,response:Response):
                 tel=user['tel'],
                 session_token=access_token,
                 name=user['name'],
-                surname = user['surname'],
-                patronymic = user['patronymic'])
+                surname = user['surname'])
 
 @router.post("/auth_signup")
 async def Registration_User(signup:Signup):
@@ -45,7 +46,6 @@ async def Registration_User(signup:Signup):
     await db.users.insert_one({"_id":str(uuid.uuid4()),
                                "name":signup.name,
                                "surname":signup.surname,
-                               "patronymic":signup.patronymic,
                                "email":signup.email,
                                "password":signup.password,
                                "tel":signup.tel,
@@ -68,5 +68,12 @@ async def activ_user(new_token:Activ_user):
 async def is_login(request: Request):
     return await check_auth_ret_user(request)
     
-
+@router.post("/patch_user")
+async def patch_user(patch:patch_user,request: Request):
+    user = await check_auth_user(request)
+    await db.users.update_one({"_id":user['_id']},{"$set":{"name":patch.name,
+                                                           "surname":patch.surname,
+                                                           "email":patch.email,
+                                                           "tel":patch.tel}})
+    return patch
 

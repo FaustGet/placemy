@@ -28,7 +28,6 @@ async def get_house(offerObject):
         "area_land": offerObject.get("inputs").get("area_land").get("value"),
         "area_house": offerObject.get("inputs").get("area_house").get("value"),
         "count_rooms": offerObject.get("inputs").get("count_rooms").get("value"),
-        "floor": offerObject.get("inputs").get("floor").get("value"),
         "floorsHouse": offerObject.get("inputs").get("floorsHouse").get("value"),
         "ground_type": offerObject.get("selects").get("ground_type").get("value"),
         "building_renovation": offerObject.get("selects").get("building_renovation").get("value"),

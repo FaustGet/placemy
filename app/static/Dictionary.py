@@ -51,6 +51,17 @@ class for_who_data():
             "woman":"Женщина",
             "man":"Мужчина"
             }
+
+class type_objects():
+    value = {
+             "apartment":"Квартиру",
+             "room":"Комнату",
+             "house":"Дом",
+             "ground":"Участок",
+             "commercy":"Коммерческую",
+             "building":"Здание"
+
+            }
 class city_type():
     value={
         'dushanbe': 'Душанбе',

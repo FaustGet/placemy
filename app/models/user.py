@@ -7,5 +7,10 @@ class User(BaseModel):
     tel: str
     name: str
     surname: str
-    patronymic: str
     session_token: str
+
+class patch_user(BaseModel):
+    name: str
+    surname: str
+    tel: str
+    email: str
