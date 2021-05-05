@@ -14,5 +14,19 @@ class Test_celery(BaseModel):
     name:str
     q:int
 
-class aciv_offer(BaseModel):
+
+class Delete_offer(BaseModel):
     id:str
+
+class activ_offer(BaseModel):
+    id:str
+    active:int
+    note:Optional[str] = ""
+
+class Offer_patch(BaseModel):
+    id:str 
+    offerObject: Optional[dict] = {}
+    offerPrice: Optional[dict] = {}
+    description: str 
+    photos: list 
+    title:str 

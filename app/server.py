@@ -1,14 +1,17 @@
 from fastapi import FastAPI, Response, Request, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from router import authentication,ad,geocoders, files
+from router import authentication,ad, files, chat,geocoders
+
+
 
 app = FastAPI()
+
 app.include_router(authentication.router)
 app.include_router(ad.router)
-app.include_router(geocoders.router)
 app.include_router(files.router)
-
-
+app.include_router(geocoders.router)
+app.include_router(chat.router)
 
 
 @app.middleware("http")
@@ -23,4 +26,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+
 )
+
+
