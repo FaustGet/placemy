@@ -13,6 +13,14 @@ class Signup(BaseModel):
     email: str
     password: str
 
+
 class Activ_user(BaseModel):
     token:str
+
+class Reset_pass(BaseModel):
+    email:str
+
+class Restore_pass(BaseModel):
+    token:str
+    password:str
 

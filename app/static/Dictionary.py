@@ -24,6 +24,13 @@ class ground_type():
         "nonProfitPartnership":"ДНП"
     }
 
+class deal_type():
+    value = {
+             "sell":"Продажа",
+             "rent_long":"Аренда",
+             "rent_mount":"посуточная аренда"
+            }
+
 class building_type():
     value = {
              "secondaryBuilding":"Вторичный рынок",
@@ -145,3 +152,34 @@ class prepayment_data():
          "prpt_eleven":"11 месяцев",
          "prpt_year":"1 год"
                }
+
+class info(object):
+    value= {
+            "object":"Тип обьекта",
+            "area":"Площадь",
+            'area_land':"Площать участка",
+            "area_room":"Площадь комнат", 
+            'area_house':'Площадь дома',
+            "area_building":'Площадь здания',
+            'ground_type':'Тип участка',
+            "count_rooms":"Количетсво комнат", 
+            "count_rooms_rent":"Количество комнат в аренду",
+            'office_type':'Тип здания',
+            "floor":"Этаж",
+            "floorsHouse":"Этажей в доме",
+            'floors_building':'Этажей',
+            "building_type":"Тип здания",
+            "building_renovation":"Тип ремонта",
+            "city":"Город",
+           }
+
+class price_info(object):
+    value= {
+            "deal":"Тип сделки",
+            "price":"Цена",
+            "type_sell":"Тип продажи",
+            "price_mounth":"Цена за месяц",
+            "deposit":"Депозит",
+            "prepayment":"Предоплата",
+            "for_who":"Состав съемщиков",
+           }

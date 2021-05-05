@@ -7,11 +7,11 @@ from geopy.geocoders import Nominatim
 router = APIRouter(prefix=server.Server_config.prefix,
                    responses = server.Server_config.responses,
                    tags=['geocoder'])
-
+ 
 class Geocod(object):
     address = "Таджикистан"
 
-@router.post("/offer_geocoder_reverse")
+@router.post("/get_address")
 async def geocoder_reverse(point:Geocoder_reverse):
     try:
         geolocator = Nominatim(user_agent="mirllex")
@@ -20,18 +20,13 @@ async def geocoder_reverse(point:Geocoder_reverse):
     except:
         return {"map_address":""}
 
-@router.post("/offer_geocoder_geocode")
+@router.post("/get_marker")
 async def geocoder_geocode(point:Geocoder_point):
-    try:
-        
+    try:  
         point.map_address = point.map_address +" " +  Geocod.address
-        print(point)
         geolocator = Nominatim(user_agent="mirllex")
         location = geolocator.geocode(point.map_address)
-        print(location.address)
+
         return [{'value':location.address,"coords":[location.latitude,location.longitude]}]
-        
-        #print(location.latitude, location.longitude)
-        #return {location.latitude,location.longitude}
     except:
         return [{'value':""}]

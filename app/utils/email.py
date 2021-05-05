@@ -21,3 +21,19 @@ async def send_mes(user_email: str, code:str):
         return True
     except:
         raise HTTPException(status_code=503)
+
+async def send_mes_reset_pass(user_email: str, code:str):
+    try:
+        server = smtplib.SMTP('mirllex.site',25)
+        server.login(email.Config.LOGIN_EMAIL, email.Config.PASSWORD_EMAIL)
+        from utils.authentication import create_access_token
+        access_token = await create_access_token(data={"email": user_email,"code":code}, expires_delta=60)
+        msg = MIMEText(email.Config.EMAIL_TEXT_PWD + " https://mirllex.site/account/activate?pwd=" + str(access_token), 'plain', 'utf-8')
+        msg['Subject'] = Header(email.Config.EMAIL_TEXT_PWD, 'utf-8')
+        msg['From'] = email.Config.LOGIN_EMAIL
+        msg['To'] = user_email
+        server.sendmail(email.Config.LOGIN_EMAIL, user_email, msg.as_string())
+        server.quit()
+        return True
+    except:
+        raise HTTPException(status_code=503)

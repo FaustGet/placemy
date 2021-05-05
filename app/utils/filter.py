@@ -51,8 +51,18 @@ async def select_kind(kind:str,type:str,repair:str):
 async def select_price(deal:str,priceFrom:int,priceTo:int,request_json:dict):
     if priceTo == 0 and priceFrom == 0:
         return request_json
+    if priceTo == 0:
+        json = {'$gte': priceFrom}
+    else:
+        json = {'$gte': priceFrom, '$lte': priceTo}
     if deal == 'buy':
-        request_json.update({'offer_price.price':{'$gte': priceFrom, '$lte': priceTo}})
+        request_json.update({'offer_price.price':json})
+
+    if deal == 'rent_long' or deal == 'rent':
+        request_json.update({'offer_price.price_mounth':json})
+
+    if deal == 'rent_day' or deal == 'daily':
+        request_json.update({'offer_price.price_day':json})
     return request_json
 
 async def select_ground(kind:str,type:int,request_json:dict):
@@ -120,7 +130,10 @@ async def get_offer(offer):
         list_images.append({'imgName':"https://mirllex.site/img/" + offer['offerPhothos'][i].get('imgName')})
     if len(offer['offerDescription']) > 300:
         offer['offerDescription'] = offer['offerDescription'][:300] + "..."
+    if offer['user_avatar'] != "":
+       offer['user_avatar'] = "https://mirllex.site/avatar/" + offer['user_avatar']
     return {"id":offer['_id'],
+          'map_marker':offer['map_marker'],
           "userInfo":offer['userInfo'],
           "tel":offer['tel'],
           "title":offer['title'],
@@ -130,7 +143,9 @@ async def get_offer(offer):
           "description":offer['offerDescription'],
           "images":list_images,
           "is_agent":agent,
-          "date":offer['date']}
+          'view':offer['view'],
+          "date":offer['date'],
+          "user_avatar":offer['user_avatar']}
 
 async def select_pages(table,request_json:dict):
     pages = await table.count_documents(request_json)
@@ -176,11 +191,11 @@ async def select_filter_offers(filter_offers:Filter_offers,table,page:int):
                                        filter_offers.typeGround.get('value'),
                                        request_json)
     request_json =await select_commercy(filter_offers.typeCommercy.get('value'),request_json)
+    request_json.update({"activ":1})
     response = {}
     list_offers = []
-    
     async for post in table.find(request_json).sort('date', -1).skip((page-1) * 20).limit(20):
-        if post["activ"] == True:
+        if post["activ"] == 1:
             list_offers.append(await get_offer(post))
     pages = await select_pages(table,request_json) 
     response = {"list_offers":list_offers,"pages": pages}
