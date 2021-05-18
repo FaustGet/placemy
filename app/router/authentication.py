@@ -7,6 +7,8 @@ from config.mongodb import *
 from utils.authentication import *
 from utils.email import send_mes,send_mes_reset_pass
 from utils.filter import *
+
+
 router = APIRouter(prefix=server.Server_config.prefix,
                    responses=server.Server_config.responses,
                    tags=['authentication'])
@@ -19,6 +21,10 @@ async def login(signin: Signin, response: Response):
         user = await db.moderators.find_one({'email': signin.email})
         if not user: 
             raise HTTPException(status_code=404)
+        else:
+           user['is_moder'] = True
+    else:
+        user['is_moder'] = False
     if user['password'] != signin.password:
         raise HTTPException(status_code=401)
     if user['is_activ'] == False:
@@ -32,22 +38,11 @@ async def login(signin: Signin, response: Response):
     if user['avatar'] != "":
         user['avatar'] = "https://mirllex.site/avatar/" + user['avatar']
     user_view = await db.statistics.find_one({"tel":user['tel']})
-    view = 0
-    if not user_view:
-         await db.statistics.insert_one({"_id": str(uuid.uuid4()),
-                                    "tel": user['tel'],
-                                    "view": 0})
-    else:
-      view = user_view['view']
-    return User(tel=user['tel'],
-                name=user['name'],
-                surname=user['surname'],
-                avatar=user['avatar'],
-                session_token=access_token,
-                view=view,
-                is_moder=user['_id'] in Moderotor.id)
+    user.pop('is_activ')
+    user['session_token'] = access_token
+    return user
 
-
+ 
 @router.post("/signup")
 async def Registration_User(signup: Signup):
     try:
@@ -55,18 +50,16 @@ async def Registration_User(signup: Signup):
         if user:
             raise HTTPException(status_code=409)
         code_activation = str(random.randint(100000, 999999))
-        await db.users.insert_one({"_id": str(uuid.uuid4()),
-                              "name": signup.name,
-                               "surname": signup.surname,
-                               "email": signup.email,
-                               "password": signup.password,
-                               "tel": signup.tel,
-                               "code_activation": code_activation,
-                               "avatar": "",
-                               "is_activ": False})
-        await db.statistics.insert_one({"_id": str(uuid.uuid4()),
-                                    "tel": signup.tel,
-                                    "view": 0})
+        user_model = dict(signup)
+        user_model['_id'] = str(uuid.uuid4())
+        user_model['is_activ'] = False
+        user_model['avatar'] = ""
+        user_model['offer_count'] = 0
+        user_model['list_reviews'] = []
+        user_model['code_activation'] = code_activation
+        user_model['date'] = datetime.now() + timedelta(hours=24)
+ 
+        await db.users.insert_one(user_model)
         await send_mes(signup.email, code_activation)
         return signup
     except:
@@ -91,16 +84,31 @@ async def check_access(request: Request):
 async def patch_user_info(patch: patch_user, request: Request):
     user = await check_auth_user(request)
     try:
-        if user['tel'] != patch.tel or user['name'] != patch.name or user['surname'] != patch.surname:
-            for table in list_db:
-                await table.update_many({"id_user":user['_id']},{"$set":{"tel":patch.tel,'userInfo': f"{patch.surname} {patch.name}"}})
-            await db.statistics.update_one({"tel":user['tel']},{'$set':{'tel':patch.tel}})
-        await db.users.update_one({"_id": user['_id']}, {"$set": {"name": patch.name,
-                                                              "surname": patch.surname,
-                                                              "tel": patch.tel}})
-        await db.chat.update_many({"user":{"$elemMatch":{"id":user['_id']}}},
+        if user['tel'] != patch.tel or user['name'] != patch.name or user['surname'] != patch.surname or user['companyName'] != patch.companyName:
+           if user['account_type'] == 'agency':
+              await db.moderator_chat.update_one({'id_user':user['_id']},{"$set":{"user_info":patch.companyName} })
+              await db.chat.update_many({"user":{"$elemMatch":{"id":user['_id']}}},
+                                   {"$set":{"user.$.name":patch.companyName}})
+              for table in list_db:
+                await table.update_many({"id_user":user['_id']},{"$set":{"tel":patch.tel,'userInfo': patch.companyName}})
+           else:
+              await db.moderator_chat.update_one({'id_user':user['_id']},{"$set":{"user_info":f"{patch.surname} {patch.name}"} })
+              await db.chat.update_many({"user":{"$elemMatch":{"id":user['_id']}}},
                                    {"$set":{"user.$.name":f"{patch.surname} {patch.name}"}})
-        return patch
+
+              for table in list_db:
+                await table.update_many({"id_user":user['_id']},{"$set":{"tel":patch.tel,'userInfo': f"{patch.surname} {patch.name}"}})
+
+        await db.users.update_one({"_id": user['_id']}, {"$set": {"name": patch.name,
+                                                                  "surname": patch.surname,
+                                                                  "tel": patch.tel,
+                                                                  "companyName": patch.companyName,
+                                                                  "workDate":patch.workDate,
+                                                                  "specialization":patch.specialization,
+                                                                  "about":patch.about,
+                                                                  "website":patch.website}})
+        user = await db.users.find_one({"_id":user['_id']})
+        return dict(user)
     except:
         raise HTTPException(status_code=409)
 
@@ -169,5 +177,24 @@ async def restore_password(new_token: Restore_pass):
             return True
         else:
             return False
+    except:
+        raise HTTPException(status_code=409)
+
+@router.post("/add_complaint")
+async def add_complaint(complaint:Complaint):
+    try:
+      user = await db.users.find_one({"_id":complaint.id_user})
+      if not user:
+         return Response(status_code=404)
+      text = f"На обьявление '{complaint.title}' была подана следюущая жалоба:\n\n{complaint.text}\n"
+          
+      await db.moderator_chat.update_one({"id_user":complaint.id_user},
+                                         {"$push":{"message":{"user":"moderator",
+                                                              
+                                                              "text":text,
+                                                              "date":datetime.datetime.now().strftime('%H:%M - %m.%d.%Y')}}})
+      await db.moderator_chat.update_one({"id_user":complaint.id_user},{"$set":{"unread":user['_id'],"complaint":True}})
+
+      return
     except:
         raise HTTPException(status_code=409)

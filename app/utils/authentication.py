@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from config.authentication import *
 from config.mongodb import db
-
+import uuid
   
 async def create_access_token(data: dict, expires_delta: Optional[int] = 1000000):
     to_encode = data.copy()
@@ -19,6 +19,7 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = 1000000
 async def check_activ_user_form_emailhash(token:str,pas = ""):
     try:
         payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
+        print(payload)
         email = payload.get("email")
         cod = payload.get("code")
         exp = payload.get("exp")
@@ -31,7 +32,14 @@ async def check_activ_user_form_emailhash(token:str,pas = ""):
             db.users.update_one({'email':email},{"$set":{"password":pas,"code_activation":""}})
             return True
         if user['code_activation'] == cod:
-            db.users.update_one({'email':email},{"$set":{"is_activ":True,"code_activation":""}})
+            db.users.update_one({'email':email},{"$set":{"is_activ":True,"code_activation":""}})        
+            await db.moderator_chat.insert_one({"_id": str(uuid.uuid4()),
+                                    "id_user":user['_id'],
+                                    'user_info':f"{user['surname']} {user['name']}",
+                                    "unread":"",
+                                    "complaint":False,
+                                    "message":[],
+                                    })
         else:
             raise HTTPException(status_code=409)
         return True
@@ -66,7 +74,7 @@ async def check_auth_user(request: Request,access = 0):
         if access == 1:
            if not user:
                user = await get_current_moderator(token)
-               if user['_id'] in Moderotor.id:
+               if user:
                   user['_id'] = 'moderator'
         return user
     except:
@@ -116,7 +124,7 @@ async def check_auth_moderator(request: Request):
             if 'authorization' in request.headers:
                  token = request.headers['authorization'][7:]
         user = await get_current_moderator(token) 
-        if user['_id'] in Moderotor.id:
+        if user:
             return user
         else:
             raise HTTPException(status_code=403)

@@ -12,3 +12,7 @@ list_db = [db.rent_day_commercy,
 list_db_user = [db.rent_day_living,
                db.rent_long_living,
                db.sell_living]
+
+list_db_user_commercy = [db.rent_day_commercy,
+               db.rent_long_commercy,
+               db.sell_commercy]

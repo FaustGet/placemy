@@ -73,6 +73,39 @@ async def get_messages(chat:Get_messages,request: Request):
                        'user_name':to_user}
            else:
                raise HTTPException(status_code=409)
+       current_chat = await db.moderator_chat.find_one({"_id":chat.id_chat})
+       if current_chat:
+           if user['_id'] == 'moderator':
+              list_messages = []
+              if current_chat['unread'] == user['_id'] or current_chat['complaint']:
+                  await db.moderator_chat.update_one({"_id":chat.id_chat},{"$set":{"unread":"","complaint":False}})
+              for mes in current_chat['message']:
+                  who_send = "self"
+                  if mes.get('user') != user['_id']:
+                      who_send = "remote"
+                  list_messages.append({"user":who_send,"text":mes.get('text'),'date':mes.get('date')})
+              return {"messages":list_messages,
+                       "title":f"Чат с {current_chat['user_info']}",
+                       "image":"",
+                       'user_name':current_chat['user_info']}
+           else:
+             if current_chat['id_user'] != user['_id']:
+                 raise HTTPException(status_code=409)
+             list_messages = []
+             if current_chat['unread'] == user['_id']:
+                  await db.moderator_chat.update_one({"_id":chat.id_chat},{"$set":{"unread":""}})
+             for mes in current_chat['message']:
+                  who_send = "self"
+                  if mes.get('user') != user['_id']:
+                      who_send = "remote"
+                  list_messages.append({"user":who_send,"text":mes.get('text'),'date':mes.get('date')})
+             return {"messages":list_messages,
+                       "title":f"Чат поддержки",
+                       "image":"",
+                       'user_name':"Модератор"}
+
+
+
        else:
            return Response(status_code=404)
     except:
@@ -82,8 +115,24 @@ async def get_messages(chat:Get_messages,request: Request):
 @router.get("/get_user_chats")
 async def get_user_chats(request: Request):
     user = await check_auth_user(request,1)
+    
     try:
        list_chats = []
+       if user['_id'] == 'moderator':
+           async for chat in db.moderator_chat.find():
+               list_chats.append({"id":chat['_id'],
+                              "title":f"Чат с {chat['user_info']}",
+                              "unread":chat['unread'] == user['_id'] or chat['complaint'],
+                              "image":"",
+                              "user_name":chat['user_info']}) 
+           return list_chats   
+       moderator_chat = await db.moderator_chat.find_one({"id_user":user['_id']})
+       if moderator_chat:
+          list_chats.append({"id":moderator_chat['_id'],
+                              "title":"Чат поддержки",
+                              "unread":moderator_chat['unread'] == user['_id'],
+                              "image":"",
+                              "user_name":"Модератор"})
        async for chat in db.chat.find({"user":{"$elemMatch":{"id":user['_id']}}}):
            if len(chat['message']) > 0:
                to_user = ""
@@ -91,12 +140,9 @@ async def get_user_chats(request: Request):
                    to_user = chat['user'][0].get('name')
                else:
                    to_user = chat['user'][1].get('name')
-               unread = False
-               if chat['unread'] == user['_id']:
-                   unread = True
                list_chats.append({"id":chat['_id'],
                               "title":chat['title'],
-                              "unread":unread,
+                              "unread":chat['unread'] == user['_id'],
                               "image":"https://mirllex.site/img/" + chat['image'],"user_name":to_user})
            else:
                await db.chat.delete_one({"_id":chat['_id']})

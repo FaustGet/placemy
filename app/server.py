@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from router import authentication,ad, files, chat,geocoders
+from router import authentication,ad, files, chat,geocoders,account
 
 
 
@@ -12,7 +12,7 @@ app.include_router(ad.router)
 app.include_router(files.router)
 app.include_router(geocoders.router)
 app.include_router(chat.router)
-
+app.include_router(account.router)
 
 @app.middleware("http")
 async def add_process(request: Request, call_next):

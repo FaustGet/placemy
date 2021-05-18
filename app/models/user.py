@@ -1,4 +1,4 @@
-
+from typing import Optional
 from pydantic.main import BaseModel
 
 
@@ -12,9 +12,16 @@ class User(BaseModel):
     is_moder:bool
 
 class patch_user(BaseModel):
-    name: str
-    surname: str
-    tel: str
+    name: Optional[str] = ""
+    surname: Optional[str] = ""
+    tel: Optional[str] = ""
+    email: Optional[str] = ""
+    companyName: Optional[str] = ""
+    workDate:Optional[int] = 0
+    specialization:Optional[str] = ""
+    about:Optional[str] = ""
+    website:Optional[str] = ""
+
 
 class patch_user_password(BaseModel):
     old_password:str

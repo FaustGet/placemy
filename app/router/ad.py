@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from config import server
-from config.mongodb import list_db,list_db_user
+from config.mongodb import list_db,list_db_user, list_db_user_commercy
 from models.Ad import *
 from utils.ad import *
 from utils.authentication import *
@@ -18,8 +18,8 @@ router = APIRouter(prefix=server.Server_config.prefix,
 async def create_offer(new_ad: Place_an_ad, request: Request):
     user = await check_auth_user(request)
     try:
+        print(new_ad)
         advertisement = {"id_user": user['_id'],
-                         "userInfo": f"{user['surname']}  {user['name']}",
                          "tel": user['tel'],
                          "map_address": new_ad.offerMap.get('map_address'),
                          "map_marker": new_ad.offerMap.get('map_marker')}
@@ -28,10 +28,16 @@ async def create_offer(new_ad: Place_an_ad, request: Request):
                                               new_ad.offerType.get("object_commercy"),
                                               new_ad.offerObject)
         offer_price = await get_offer_price(new_ad.offerType.get('deal'), new_ad.offerPrice)
+
         offer_object.update({'city': new_ad.offerObject.get('selects').get('cities').get('value')})
-        if new_ad.offerType.get('account') == 'agent':
+
+        if new_ad.offerType.get('account') == 'agency' or new_ad.offerType.get('account') == 'realtor':
             offer_price.update({"percentageTransaction":
                                     new_ad.offerPrice.get("inputs").get('percentageTransaction').get('value')})
+        if user['account_type'] == 'agency':
+            userInfo = user['companyName']
+        else:
+            userInfo = f"{user['surname']}  {user['name']}"
         title = await get_title(offer_object)
         list_offerImages = []
         for post in new_ad.offerPhothos:
@@ -40,6 +46,8 @@ async def create_offer(new_ad: Place_an_ad, request: Request):
                 list_offerImages.append({"imgName": image['newName']})
                 db.temp_img.delete_one({"name": post.get('imgName')})
         advertisement.update({'title': title,
+                              "account_type":user['account_type'],
+                              "userInfo": userInfo,
                               "offer_object": offer_object,
                               "offer_price": offer_price,
                               "offerDescription": new_ad.offerDescription,
@@ -49,8 +57,10 @@ async def create_offer(new_ad: Place_an_ad, request: Request):
                               "view":0,
                               "view_tel":0,
                               "activ": 0,
+                              "date":int(datetime.now() + timedelta(hours=24)),
                               'note':""})
         await push_offerdb(new_ad.offerType.get("estate"), advertisement)
+        await db.users.update_one({"_id":user['_id']},{"$set":{"offer_count":user['offer_count'] + 1}})
         return
     except:
         raise HTTPException(status_code=409)
@@ -82,6 +92,7 @@ async def delete_offer(del_offer: Delete_offer, request: Request):
                 await delete_files(image.get('imgName'))
             if table != -1:
                 await table.delete_one({"_id": del_offer.id})
+                await db.users.update_one({"_id":user['_id']},{"$set":{"offer_count":user['offer_count'] - 1}})
         else:
             return Response(status_code=409)
     except:
@@ -156,29 +167,15 @@ async def aciv_offer(offer: activ_offer, request: Request):
         if offer_update:
             await table.update_one({"_id": offer.id}, {"$set": {"activ":offer.active}})
             if offer.note !="":
-                chat = await db.chat.find_one({"user.id":'moderator',"title":offer_update['title']})
-                print(chat)
+                chat = await db.moderator_chat.find_one({"id_user":offer_update['id_user']})
                 if chat:
-                    await db.chat.update_one({"_id":chat['_id']},
-                                              {"$push":{"message":{"user":'moderator',
-                                                                   "text":offer.note,
-                                                                   "check":False,
-                                                                   "date":datetime.datetime.now().strftime('%H:%M - %m.%d.%Y')}}})
-                else:
-                   id_chat = str(uuid.uuid4())
-                   await db.chat.insert_one({"_id":id_chat,
-                                             "title":offer_update['title'],
-                                             "image":offer_update['offerPhothos'][0].get("imgName"),
-                                             "id_offer":offer_update['_id'],
-                                             "unread": offer_update['id_user'],
-                                             'user':[
-                                                  {"id":"moderator","name":f"Moderator"},
-                                                  {"id":offer_update['id_user'],"name":offer_update['userInfo']}],
-                                             "message":[{"user":"moderator",
-                                                         "text":offer.note,
-                                                         "check":False,
-                                                         "date":datetime.datetime.now().strftime('%H:%M - %m.%d.%Y')}]})
+                    text = f"В обьявлении {offer_update['title']} ошибка: {offer.note}"
+                    db.moderator_chat.update_one({"_id":chat['_id']},{"$set":{"unread":offer_update['id_user']}})
 
+                    await db.moderator_chat.update_one({"_id":chat['_id']},
+                                              {"$push":{"message":{"user":'moderator',
+                                                                   "text":text,
+                                                                   "date":datetime.datetime.now().strftime('%H:%M - %m.%d.%Y')}}})
 
         return
     except:
@@ -230,8 +227,13 @@ async def offer_patch(offer: Offer_patch, request: Request):
 async def get_moder_offer(request: Request):
     user = await check_auth_moderator(request)
     try:
+
+       list_db = list_db_user
+       if user['type'] == "commercy":
+           list_db = list_db_user_commercy
+
        list_offer = []
-       for table in list_db_user:
+       for table in list_db:
            async for offer  in table.find({'activ':0}):
                list_img = []
                for img in offer['offerPhothos']:

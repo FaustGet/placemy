@@ -14,6 +14,7 @@ tl = Timeloop()
 @tl.job(interval=datetime.timedelta(seconds=1800))
 def check_images():
     date = datetime.datetime.now()
+    print("kek")
     for post in db.temp_img.find():
         if post['date'] < int(date.timestamp()):
             db.temp_img.delete_one({"name":post['name']})

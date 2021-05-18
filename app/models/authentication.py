@@ -7,11 +7,18 @@ class Signin(BaseModel):
     password: str
 
 class Signup(BaseModel):
-    name: str
-    surname: str
-    tel: str
-    email: str
-    password: str
+    _id:Optional[str] = ""
+    account_type:Optional[str] = ""
+    name: Optional[str] = ""
+    surname: Optional[str] = ""
+    tel: Optional[str] = ""
+    email: Optional[str] = ""
+    companyName: Optional[str] = ""
+    workDate:Optional[int] = 0
+    specialization:Optional[str] = ""
+    about:Optional[str] = ""
+    website:Optional[str] = ""
+    password: Optional[str] = ""
 
 
 class Activ_user(BaseModel):
@@ -24,3 +31,7 @@ class Restore_pass(BaseModel):
     token:str
     password:str
 
+class Complaint(BaseModel):
+    id_user:str
+    title:str
+    text:str

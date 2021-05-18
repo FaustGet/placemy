@@ -135,6 +135,7 @@ async def get_offer(offer):
     return {"id":offer['_id'],
           'map_marker':offer['map_marker'],
           "userInfo":offer['userInfo'],
+          "id_user":offer['id_user'],
           "tel":offer['tel'],
           "title":offer['title'],
           "address":offer['map_address'],
@@ -142,7 +143,7 @@ async def get_offer(offer):
           "price_m2":round(price_m2,2),
           "description":offer['offerDescription'],
           "images":list_images,
-          "is_agent":agent,
+          "account_type":offer['account_type'],
           'view':offer['view'],
           "date":offer['date'],
           "user_avatar":offer['user_avatar']}
