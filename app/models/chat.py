@@ -8,4 +8,3 @@ class Open_chat(BaseModel):
 
 class Get_messages(BaseModel):
     id_chat:str
-

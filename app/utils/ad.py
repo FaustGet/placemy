@@ -49,9 +49,9 @@ async def get_title(offer):
     if offer.get('object') == 'room':
         title = f"{offer.get('count_rooms_rent')}-комн., {offer.get('area_room')}м², {offer.get('floor')}/{offer.get('floorsHouse')} этаж."
     if offer.get('object') == 'house':
-        title = f"{offer.get('count_rooms')}-км. дом., {offer.get('area_land')}м², {offer.get('floorsHouse')} этаж."
+        title = f"{offer.get('count_rooms')}-км. дом., {offer.get('area_house')}м² + {offer.get('area_land')} сот., {offer.get('floorsHouse')} этаж."
     if offer.get('object') == 'ground':
-        title = f"{ground_type.value.get(offer.get('ground_type'))}, {offer.get('area_land')}м²"
+        title = f"{ground_type.value.get(offer.get('ground_type'))}, {offer.get('area_land')} сот."
     if offer.get('object') == 'office':
         title = f"{office_type.value.get(offer.get('office_type'))}, {offer.get('area')}м²"
     if offer.get('object') == 'building':
@@ -77,8 +77,10 @@ async def get_price_m2(price, offer, deal):
     if offer['offer_object'].get('object') == 'room':
         price_m2 = float(price / offer['offer_object'].get('area_room'))
 
-    if offer['offer_object'].get('object') == 'house' or \
-            offer['offer_object'].get('object') == 'ground':
+    if offer['offer_object'].get('object') == 'house':
+        price_m2 = float(price / offer['offer_object'].get('area_house'))
+
+    if offer['offer_object'].get('object') == 'ground':
         price_m2 = float(price / offer['offer_object'].get('area_land'))
 
     if offer['offer_object'].get('object') == 'building':
@@ -96,7 +98,7 @@ async def get_offer_on_id(id: str):
         offer = await table.find_one({"_id": id})
      
         if offer:
-            if offer['activ'] == 0:
+            if offer['state'] == 0:
                 return ""
             if offer['offer_object']['object'] == 'apartment' or offer['offer_object']['object'] == 'room':
                 offer['offer_object']['building_type'] = building_type.value.get(offer['offer_object']['building_type'])
@@ -136,10 +138,10 @@ async def get_offer_on_id(id: str):
 
             list_images = []
             for post in offer['offerPhothos']:
-                list_images.append({'imgName': "https://mirllex.site/img/" + post.get('imgName')})
+                list_images.append({'imgName': "https://maidon.tj/img/" + post.get('imgName')})
             offer['offerPhothos'] = list_images
             if offer['user_avatar'] != "":
-                offer['user_avatar'] = "https://mirllex.site/avatar/" + offer['user_avatar']
+                offer['user_avatar'] = "https://maidon.tj/avatar/" + offer['user_avatar']
             offer['view'] = offer['view'] + 1  
             await table.update_one({"_id":offer['_id']},{"$set":{"view":offer['view']}})
             return offer

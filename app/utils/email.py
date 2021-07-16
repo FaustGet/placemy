@@ -1,39 +1,24 @@
 import smtplib
 import ssl
+import random
 from email.mime.text import MIMEText
 from email.header import Header
 from config import email
 from fastapi import  HTTPException
+from config.sms_service import Sms_service
+from hashlib import sha256
+import requests
 
-
-async def send_mes(user_email: str, code:str):
+async def send_mes(phone_number: str, code:str):
     try:
-        server = smtplib.SMTP('mirllex.site',25)
-        server.login(email.Config.LOGIN_EMAIL, email.Config.PASSWORD_EMAIL)
-        from utils.authentication import create_access_token
-        access_token = await create_access_token(data={"email": user_email,"code":code}, expires_delta=60)
-        msg = MIMEText(email.Config.EMAIL_TEXT + " https://mirllex.site/account/activate?access=" + str(access_token), 'plain', 'utf-8')
-        msg['Subject'] = Header(email.Config.EMAIL_TEXT, 'utf-8')
-        msg['From'] = email.Config.LOGIN_EMAIL
-        msg['To'] = user_email
-        server.sendmail(email.Config.LOGIN_EMAIL, user_email, msg.as_string())
-        server.quit()
+        phone_number = phone_number.replace("(","").replace(")","").replace("+","").replace("-","").replace(" ","")
+        txn_id = str(random.randint(100000, 999999))
+        hash = f'{txn_id};{Sms_service.LOGIN};{Sms_service.FROM};{phone_number};{Sms_service.pass_salt_hash}'
+        sha_str = sha256(hash.encode('utf-8')).hexdigest()
+        message = f'Maidon.tj: {code} - ваш код для подтверждения телефона'
+        response = requests.get(f'https://api.osonsms.com/sendsms_v1.php?login={Sms_service.LOGIN}&from={Sms_service.FROM}'
+                                f'&phone_number={phone_number}&msg={message}&txn_id={txn_id}&str_hash={sha_str}')
         return True
     except:
         raise HTTPException(status_code=503)
 
-async def send_mes_reset_pass(user_email: str, code:str):
-    try:
-        server = smtplib.SMTP('mirllex.site',25)
-        server.login(email.Config.LOGIN_EMAIL, email.Config.PASSWORD_EMAIL)
-        from utils.authentication import create_access_token
-        access_token = await create_access_token(data={"email": user_email,"code":code}, expires_delta=60)
-        msg = MIMEText(email.Config.EMAIL_TEXT_PWD + " https://mirllex.site/account/restorepassword?pwd=" + str(access_token), 'plain', 'utf-8')
-        msg['Subject'] = Header(email.Config.EMAIL_TEXT_PWD, 'utf-8')
-        msg['From'] = email.Config.LOGIN_EMAIL
-        msg['To'] = user_email
-        server.sendmail(email.Config.LOGIN_EMAIL, user_email, msg.as_string())
-        server.quit()
-        return True
-    except:
-        raise HTTPException(status_code=503)

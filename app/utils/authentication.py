@@ -20,19 +20,19 @@ async def check_activ_user_form_emailhash(token:str,pas = ""):
     try:
         payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
         print(payload)
-        email = payload.get("email")
+        tel = payload.get("tel")
         cod = payload.get("code")
         exp = payload.get("exp")
         if int(datetime.today().timestamp()) > exp:
             return Response(status_code=482)
-        user = await db.users.find_one({'email':email})
+        user = await db.users.find_one({'tel':tel})
         if not user:
             raise HTTPException(status_code=404)
         if user['is_activ'] == True and user['code_activation'] == cod:
-            db.users.update_one({'email':email},{"$set":{"password":pas,"code_activation":""}})
+            db.users.update_one({'tel':tel},{"$set":{"password":pas,"code_activation":""}})
             return True
         if user['code_activation'] == cod:
-            db.users.update_one({'email':email},{"$set":{"is_activ":True,"code_activation":""}})        
+            db.users.update_one({'tel':tel},{"$set":{"is_activ":True,"code_activation":""}})        
             await db.moderator_chat.insert_one({"_id": str(uuid.uuid4()),
                                     "id_user":user['_id'],
                                     'user_info':f"{user['surname']} {user['name']}",
@@ -49,17 +49,17 @@ async def check_activ_user_form_emailhash(token:str,pas = ""):
 async def get_current_session_user(token):
     try:
         payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
-        email = payload.get("email")
+        tel = payload.get("tel")
         exp = payload.get("exp")
         if int(datetime.today().timestamp()) > exp:
             return Response(status_code=482)
     except JWTError:
         raise HTTPException(status_code=401)
-    if email is None:
+    if tel is None:
         raise HTTPException(status_code=401)
 
     users_collection = db.users
-    user = await users_collection.find_one({'email': email})
+    user = await users_collection.find_one({'tel': tel})
     return user
 
 async def check_auth_user(request: Request,access = 0):
@@ -88,14 +88,14 @@ async def check_auth_ret_user(request: Request):
             if 'authorization' in request.headers:
                  token = request.headers['authorization'][7:]
         payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
-        email = payload.get("email")
+        tel = payload.get("tel")
         exp = payload.get("exp")
         if int(datetime.today().timestamp()) > exp:
             return Response(status_code=482)
 
-        if email is None:
+        if tel is None:
             return -1
-        user = await db.users.find_one({'email': email})
+        user = await db.users.find_one({'tel': tel})
         if user:
             return True
         return -1
@@ -105,15 +105,15 @@ async def check_auth_ret_user(request: Request):
 async def get_current_moderator(token):
     try:
         payload = jwt.decode(token, Authentication_config.SECRET_KEY, algorithms=[Authentication_config.ALGORITHM])
-        email = payload.get("email")
+        tel = payload.get("tel")
         exp = payload.get("exp")
         if int(datetime.today().timestamp()) > exp:
             return Response(status_code=482)
     except JWTError:
         raise HTTPException(status_code=401)
-    if email is None:
+    if tel is None:
         raise HTTPException(status_code=401)
-    user = await db.moderators.find_one({'email': email})
+    user = await db.moderators.find_one({'tel': tel})
     return user
 
 async def check_auth_moderator(request: Request):
@@ -131,3 +131,4 @@ async def check_auth_moderator(request: Request):
     except:
         raise HTTPException(status_code=403)
 
+ 

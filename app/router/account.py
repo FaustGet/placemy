@@ -5,7 +5,7 @@ from models.authentication import *
 from models.account import *
 from config.mongodb import *
 from utils.authentication import *
-from utils.email import send_mes,send_mes_reset_pass
+from utils.email import send_mes
 from utils.filter import *
 
 
@@ -15,13 +15,11 @@ router = APIRouter(prefix=server.Server_config.prefix,
 
 @router.post("/get_accounts")
 async def get_account(account:Account):
-    #try:
-        print(account)
+    try:
         if account.type not in ['realtor','agency']:
             raise HTTPException(status_code=409)
         list_accounts = []
         async for user in db.users.find({"account_type":account.type}).skip((account.page-1) * 10).limit(10):
-            item = {"id":user['_id'],"offer_count":user['offer_count']}
             value_review = 0.00
             for review in user['list_reviews']:
                 value_review += review.get('value')
@@ -29,17 +27,16 @@ async def get_account(account:Account):
                 value_review = round(float(value_review/len(user['list_reviews'])),2)
 
             if user['avatar'] !="":
-                user['avatar'] = "https://mirllex.site/avatar/" + user['avatar']
+                user['avatar'] = "https://maidon.tj/avatar/" + user['avatar']
             review_text = ""
             review_last = {}
             review_lastuser =""    
-  
- 
+
             if len(user['list_reviews']) > 0:
                review_last = user['list_reviews'][len(user['list_reviews'])-1]
                review_text = review_last.get('text') 
                review_lastuser = review_last.get('user')
-        
+
             item = {"id":user['_id'],
                     "offer_count":user['offer_count'],
                     "avatar":user['avatar'],
@@ -60,7 +57,7 @@ async def get_account(account:Account):
         else:
             pages = pages // 10 + 1
         return {"count":len(list_accounts),"accounts":list_accounts,"pages":pages}
-    #except:
+    except:
         raise HTTPException(status_code=409)
 
 @router.post("/add_review")
@@ -69,16 +66,19 @@ async def add_review(review:Review,request: Request):
     try:
         if user['_id'] == review.id:
             raise HTTPException(status_code=409)
-        if user['account_type'] != "owner":
-            raise HTTPException(status_code=409)
         review_user = await db.users.find_one({"_id":review.id})
         if review_user:
+            if user['account_type'] in ['agency','entity']:
+                user_info = user['companyName']
+            if user['account_type'] in ['realtor','owner','individual']:
+                user_info = f"{user['surname']} {user['name']}"
+
             db.users.update_one({"_id":review.id},
-                                {"$push":{"list_reviews":{"user":f"{user['surname']} {user['name']}",
+                                {"$push":{"list_reviews":{"user":user_info,
                                                          "text":review.text,
                                                          'date':datetime.datetime.now().strftime('%H:%M - %m.%d.%Y'),
                                                          "value":review.value}}})
-        return
+        return 
     except:
         raise HTTPException(status_code=409)
 
@@ -111,7 +111,7 @@ async def get_info_account(id:str):
         user.pop('offer_count')
         user.pop('_id')
         if user['avatar'] !="":
-           user['avatar'] = "https://mirllex.site/avatar/" + user['avatar']
+           user['avatar'] = "https://maidon.tj/avatar/" + user['avatar']
         for key in list(user.keys()):
             if user.get(key) == "" and key != 'avatar':
                user.pop(key) 

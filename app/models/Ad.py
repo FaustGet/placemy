@@ -20,7 +20,7 @@ class Delete_offer(BaseModel):
 
 class activ_offer(BaseModel):
     id:str
-    active:int
+    state:int
     note:Optional[str] = ""
 
 class Offer_patch(BaseModel):

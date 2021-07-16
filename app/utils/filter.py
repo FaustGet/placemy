@@ -36,9 +36,14 @@ async def select_count_rooms(request_json:dict,object:str):
         request_json.update({"offer_object.count_rooms": {"$gte":4}})
     return request_json
 
-async def select_kind(kind:str,type:str,repair:str):
+async def select_kind(kind:str,type:str,repair:str,typeCommercy=""):
+
     if kind == 'commercy':
-        request_json = {"offer_object.object": 'office'}
+        if typeCommercy is None:
+            return {"offer_object.object": {"$in":['office','building']}}
+        else:
+            request_json = {"offer_object.object": 'office'}
+ 
     else:
         request_json = {"offer_object.object": kind}
     if (kind == "apartment") or (kind == "room") or (kind=='house'):
@@ -90,8 +95,10 @@ async def select_size(kind:str,sizeFrom:int,sizeTo:int,request_json:dict):
         request_json.update({'offer_object.area':{'$gte':sizeFrom, '$lte':sizeTo}})
     if kind == 'room':
         request_json.update({'offer_object.area_room': {'$gte': sizeFrom, '$lte': sizeTo}})
-    if kind == 'ground' or kind == 'house':
+    if kind == 'ground':
         request_json.update({'offer_object.area_land': {'$gte': sizeFrom, '$lte': sizeTo}})
+    if kind == 'house':
+        request_json.update({'offer_object.area_house': {'$gte': sizeFrom, '$lte': sizeTo}})
     if kind == 'building':
         request_json.update({'offer_object.area_building': {'$gte': sizeFrom, '$lte': sizeTo}})
     return request_json
@@ -117,8 +124,9 @@ async def get_offer(offer):
     if offer['offer_object'].get('object') == 'room':
         price_m2 = float(price/offer['offer_object'].get('area_room'))
 
-    if offer['offer_object'].get('object') == 'house' or \
-            offer['offer_object'].get('object') == 'ground':
+    if offer['offer_object'].get('object') == 'house':
+        price_m2 = float(price/offer['offer_object'].get('area_house'))
+    if offer['offer_object'].get('object') == 'ground':
         price_m2 = float(price/offer['offer_object'].get('area_land'))
 
     if offer['offer_object'].get('object') == 'building':
@@ -127,11 +135,11 @@ async def get_offer(offer):
     if len(offer['offerPhothos']) <4:
         return
     for i in range(4):
-        list_images.append({'imgName':"https://mirllex.site/img/" + offer['offerPhothos'][i].get('imgName')})
+        list_images.append({'imgName':"https://maidon.tj/img/" + offer['offerPhothos'][i].get('imgName')})
     if len(offer['offerDescription']) > 300:
         offer['offerDescription'] = offer['offerDescription'][:300] + "..."
     if offer['user_avatar'] != "":
-       offer['user_avatar'] = "https://mirllex.site/avatar/" + offer['user_avatar']
+       offer['user_avatar'] = "https://maidon.tj/avatar/" + offer['user_avatar']
     return {"id":offer['_id'],
           'map_marker':offer['map_marker'],
           "userInfo":offer['userInfo'],
@@ -148,12 +156,12 @@ async def get_offer(offer):
           "date":offer['date'],
           "user_avatar":offer['user_avatar']}
 
-async def select_pages(table,request_json:dict):
+async def select_pages(table,request_json:dict,p:int = 20 ):
     pages = await table.count_documents(request_json)
-    if pages % 20 == 0:
-        pages = pages // 20
+    if pages % p == 0:
+        pages = pages // p
     else:
-        pages = pages // 20 + 1
+        pages = pages // p + 1
     return pages
 
 async def select_offers(kind:str,type:str,object:str,repair:str,pagina:int,table):
@@ -176,7 +184,8 @@ async def select_offers(kind:str,type:str,object:str,repair:str,pagina:int,table
 async def select_filter_offers(filter_offers:Filter_offers,table,page:int):
     request_json = await select_kind(filter_offers.objects.get('value'),
                                      filter_offers.typeBuilding.get('value'),
-                                     filter_offers.repair.get('value'))
+                                     filter_offers.repair.get('value'),
+                                     filter_offers.typeCommercy.get('value'))
     if filter_offers.objects.get('value') == "apartment":
         request_json = await select_count_rooms(request_json,filter_offers.rooms.get('value'))
     if filter_offers.address != '':
@@ -192,12 +201,13 @@ async def select_filter_offers(filter_offers:Filter_offers,table,page:int):
                                        filter_offers.typeGround.get('value'),
                                        request_json)
     request_json =await select_commercy(filter_offers.typeCommercy.get('value'),request_json)
-    request_json.update({"activ":1})
+    request_json.update({"state":1})
     response = {}
     list_offers = []
+
     async for post in table.find(request_json).sort('date', -1).skip((page-1) * 20).limit(20):
-        if post["activ"] == 1:
-            list_offers.append(await get_offer(post))
+
+        list_offers.append(await get_offer(post))
     pages = await select_pages(table,request_json) 
     response = {"list_offers":list_offers,"pages": pages}
     return response

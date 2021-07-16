@@ -69,7 +69,7 @@ async def get_messages(chat:Get_messages,request: Request):
                    to_user = current_chat['user'][1].get('name')
                return {"messages":list_messages,
                        "title":current_chat['title'],
-                       "image":"https://mirllex.site/img/" + current_chat['image'],
+                       "image":"https://maidon.tj/img/" + current_chat['image'],
                        'user_name':to_user}
            else:
                raise HTTPException(status_code=409)
@@ -143,7 +143,7 @@ async def get_user_chats(request: Request):
                list_chats.append({"id":chat['_id'],
                               "title":chat['title'],
                               "unread":chat['unread'] == user['_id'],
-                              "image":"https://mirllex.site/img/" + chat['image'],"user_name":to_user})
+                              "image":"https://maidon.tj/img/" + chat['image'],"user_name":to_user})
            else:
                await db.chat.delete_one({"_id":chat['_id']})
        return list_chats 

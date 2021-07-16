@@ -10,12 +10,11 @@ class User(BaseModel):
     session_token: str
     view:int
     is_moder:bool
-
+ 
 class patch_user(BaseModel):
     name: Optional[str] = ""
     surname: Optional[str] = ""
     tel: Optional[str] = ""
-    email: Optional[str] = ""
     companyName: Optional[str] = ""
     workDate:Optional[int] = 0
     specialization:Optional[str] = ""

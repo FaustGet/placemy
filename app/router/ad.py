@@ -8,7 +8,7 @@ from static.Dictionary import info, price_info
 from models.filters import *
 from utils.filter import *
 from utils.files import delete_files
-
+from datetime import datetime
 router = APIRouter(prefix=server.Server_config.prefix,
                    responses=server.Server_config.responses,
                    tags=['ad'])
@@ -17,8 +17,9 @@ router = APIRouter(prefix=server.Server_config.prefix,
 @router.post("/create_offer")
 async def create_offer(new_ad: Place_an_ad, request: Request):
     user = await check_auth_user(request)
+    
     try:
-        print(new_ad)
+        
         advertisement = {"id_user": user['_id'],
                          "tel": user['tel'],
                          "map_address": new_ad.offerMap.get('map_address'),
@@ -51,20 +52,19 @@ async def create_offer(new_ad: Place_an_ad, request: Request):
                               "offer_object": offer_object,
                               "offer_price": offer_price,
                               "offerDescription": new_ad.offerDescription,
-                              "date": int(datetime.datetime.now().timestamp()),
+                              "date": int(datetime.now().timestamp()),
                               "offerPhothos": list_offerImages,
                               "user_avatar": user['avatar'],
                               "view":0,
                               "view_tel":0,
-                              "activ": 0,
-                              "date":int(datetime.now() + timedelta(hours=24)),
+                              "state": 0,
                               'note':""})
         await push_offerdb(new_ad.offerType.get("estate"), advertisement)
         await db.users.update_one({"_id":user['_id']},{"$set":{"offer_count":user['offer_count'] + 1}})
         return
     except:
         raise HTTPException(status_code=409)
-
+ 
 
 @router.get("/get_offer/{id}")
 async def get_offerID(id: str):
@@ -102,9 +102,11 @@ async def delete_offer(del_offer: Delete_offer, request: Request):
 @router.post("/get_filter_offers")
 async def get_filter_offers(filter_offers: Filter_offers):
     try:
+   
         table = await select_table(filter_offers.deals.get('value'), filter_offers.objects.get('value'))
         if table == -1:
             return []
+        
         list_offer = await select_filter_offers(filter_offers, table, filter_offers.page)
         return list_offer
     except:
@@ -122,7 +124,7 @@ async def get_user_offers(request: Request):
             async for offer in table.find({'id_user': user['_id']}):
                 list_images = []
                 for image in offer['offerPhothos']:
-                    list_images.append({"imgSrc": "https://mirllex.site/img/" + image.get('imgName'),"imgName":image.get('imgName')})
+                    list_images.append({"imgSrc": "https://maidon.tj/img/" + image.get('imgName'),"imgName":image.get('imgName')})
                 agent = False
                 type_object = "living"
                 if offer['offer_object'].get('object') == 'office' or offer['offer_object'].get('object') == 'build':
@@ -147,16 +149,17 @@ async def get_user_offers(request: Request):
                                         'photos': list_images,
                                         'view':offer['view'],
                                         'agent':agent,
-                                        'state': offer['activ'],
+                                        'state': offer['state'],
                                         'type_object':type_object,
                                         'view_tel':offer['view_tel']})
+   
         return list_user_offer
     except:
         return Response(status_code=409)
 
 
-@router.post("/activ_offer")
-async def aciv_offer(offer: activ_offer, request: Request):
+@router.post("/active_offer")
+async def acive_offer(offer: activ_offer, request: Request):
     user = await check_auth_moderator(request)
     try:
         id_list = offer.id.split("-")
@@ -165,7 +168,7 @@ async def aciv_offer(offer: activ_offer, request: Request):
             return
         offer_update = await table.find_one({"_id": offer.id})
         if offer_update:
-            await table.update_one({"_id": offer.id}, {"$set": {"activ":offer.active}})
+            await table.update_one({"_id": offer.id}, {"$set": {"state":offer.state}})
             if offer.note !="":
                 chat = await db.moderator_chat.find_one({"id_user":offer_update['id_user']})
                 if chat:
@@ -180,6 +183,7 @@ async def aciv_offer(offer: activ_offer, request: Request):
         return
     except:
         return Response(status_code=409)
+
 
 
 @router.post("/change_offer")
@@ -210,11 +214,11 @@ async def offer_patch(offer: Offer_patch, request: Request):
              offer_object.update({'city': offer.offerObject.get('selects').get('cities').get('value')})
              
              request_json = {"offerDescription":offer.description,
-                             "offerPhothos":list_images,"activ":False,
+                             "offerPhothos":list_images,
                              "offer_object":offer_object,
                              "offer_price":offer_price,
                              'title':title,
-                             'activ':0}
+                             'state':0}
              
                       
              await table.update_one({"_id":offer.id},{"$set":request_json})
@@ -234,10 +238,10 @@ async def get_moder_offer(request: Request):
 
        list_offer = []
        for table in list_db:
-           async for offer  in table.find({'activ':0}):
+           async for offer  in table.find({'state':0}):
                list_img = []
                for img in offer['offerPhothos']:
-                   list_img.append({"imgName":"https://mirllex.site/img/" + img.get('imgName')})
+                   list_img.append({"imgName":"https://maidon.tj/img/" + img.get('imgName')})
 
                offer_object_text = ""
                for obj in offer['offer_object']:
@@ -263,7 +267,7 @@ async def get_markers(request: Request):
     list_offer = []
     try:
         for table in list_db:
-           async for offer  in table.find({'activ':1}):
+           async for offer  in table.find({'state':1}):
                list_offer.append({"id":offer['_id'],
                                   "marker":offer['map_marker']})
         return list_offer
@@ -279,7 +283,7 @@ async def get_map_offer(id:str):
 
         if not offer:
             return Response(status_code=404)
-        if offer['activ'] == 0:
+        if offer['state'] == 0:
             return Response(status_code=404)
 
         object = offer['offer_object'].get('object')

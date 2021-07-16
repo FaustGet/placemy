@@ -3,7 +3,7 @@ from pydantic.main import BaseModel
 
 
 class Signin(BaseModel):
-    email: str
+    tel: str
     password: str
 
 class Signup(BaseModel):
@@ -12,7 +12,6 @@ class Signup(BaseModel):
     name: Optional[str] = ""
     surname: Optional[str] = ""
     tel: Optional[str] = ""
-    email: Optional[str] = ""
     companyName: Optional[str] = ""
     workDate:Optional[int] = 0
     specialization:Optional[str] = ""
@@ -22,13 +21,15 @@ class Signup(BaseModel):
 
 
 class Activ_user(BaseModel):
-    token:str
+    tel:str
+    code:str
 
 class Reset_pass(BaseModel):
-    email:str
+    tel:str
 
 class Restore_pass(BaseModel):
-    token:str
+    tel:str
+    code:str
     password:str
 
 class Complaint(BaseModel):
